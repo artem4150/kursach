@@ -1,0 +1,101 @@
+﻿@page "/register"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<h3>Регистрация</h3>
+
+<div class="background">
+    <div class="content">
+        <div class="login-form">
+            <h1>Регистрация</h1>
+            <EditForm Model="@registrationModel" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-group">
+                    <label for="username">Имя пользователя:</label>
+                    <InputText id="username" @bind-Value="registrationModel.Username" class="form-input" />
+                    <ValidationMessage For="@(() => registrationModel.Username)" />
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <InputText id="email" @bind-Value="registrationModel.Email" class="form-input" />
+                    <ValidationMessage For="@(() => registrationModel.Email)" />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <InputText id="password" @bind-Value="registrationModel.Password" type="password" class="form-input" />
+                    <ValidationMessage For="@(() => registrationModel.Password)" />
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="form-button">Зарегистрироваться</button>
+                </div>
+            </EditForm>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <p class="error-message">@ErrorMessage</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegistrationModel registrationModel = new();
+    private string ErrorMessage;
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("ApiClient");
+
+            // Формируем данные для отправки
+            var payload = new
+            {
+                Username = registrationModel.Username,
+                Email = registrationModel.Email,
+                PasswordHash = HashPassword(registrationModel.Password) // Хешируем пароль перед отправкой
+            };
+
+            var response = await client.PostAsJsonAsync("api/auth/register", payload);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Регистрация успешна");
+                // Перенаправляем на страницу логина
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                ErrorMessage = await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Произошла ошибка при регистрации: {ex.Message}";
+        }
+    }
+
+    private string HashPassword(string password)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+        return Convert.ToBase64String(hashedBytes);
+    }
+
+    public class RegistrationModel
+    {
+    
+        public string Username { get; set; }
+
+        
+        public string Email { get; set; }
+
+        
+        public string Password { get; set; }
+    }
+}

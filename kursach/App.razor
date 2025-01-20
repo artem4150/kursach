@@ -1,0 +1,12 @@
+﻿<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Страница не найдена</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p>К сожалению, ничего не найдено по указанному адресу.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

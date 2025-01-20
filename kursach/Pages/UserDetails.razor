@@ -1,0 +1,38 @@
+﻿@page "/user-details"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<h3>Информация о пользователе</h3>
+
+@if (!string.IsNullOrEmpty(UserInfo))
+{
+    <p>@UserInfo</p>
+}
+else
+{
+    <p>Загрузка...</p>
+}
+
+@code {
+    private string UserInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("ApiClient");
+
+            // Получаем информацию о текущем пользователе
+            UserInfo = await client.GetStringAsync("api/users/current-user-id");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            // Если пользователь не авторизован, перенаправляем на логин
+            NavigationManager.NavigateTo("/login");
+        }
+        catch
+        {
+            UserInfo = "Ошибка загрузки данных.";
+        }
+    }
+}

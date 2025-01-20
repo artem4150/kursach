@@ -1,0 +1,75 @@
+﻿/*namespace kursach.wwwroot.css
+{
+    public class style
+    {
+    }
+}
+*/
+/*@import url('/images/background.jpg');
+
+.page {
+    display: flex;
+    flex-direction: column;*/ /* Убираем разделение на колонки */
+    /*height: 100vh;
+}
+
+.main {
+    flex: 1;
+    padding: 0;
+    width: 100%;*/ /* Контент теперь занимает всю ширину */
+/*}
+
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+}
+
+.background {
+    background: url('/images/background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.content {
+    text-align: center;
+    color: white;
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+p {
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+.buttons {
+    margin-top: 2rem;
+}
+
+button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 0 10px;
+    transition: background-color 0.3s;
+}
+
+    button:hover {
+        background-color: #444;
+    }*/

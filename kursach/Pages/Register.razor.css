@@ -1,0 +1,68 @@
+﻿/* Фон */
+.background {
+    background: url('/images/register-background.png') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+}
+
+/* Контейнер формы */
+.login-form {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+    .login-form h1 {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        color: black;
+    }
+
+.form-group {
+    margin-bottom: 20px; /* Добавлено расстояние между полями */
+}
+
+.login-form label {
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+    font-size: 1em;
+    color: black;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+.form-button {
+    width: 100%;
+    padding: 10px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+    .form-button:hover {
+        background-color: #333;
+    }
+
+.error-message {
+    color: red;
+    margin-top: 10px;
+}

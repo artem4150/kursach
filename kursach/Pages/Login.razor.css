@@ -1,0 +1,68 @@
+﻿.background {
+    background: url('/images/register-background.png') no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: black;
+}
+
+/* Контейнер формы */
+.content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Форма */
+.login-form {
+    background-color: rgba(255, 255, 255, 0.8); /* Полупрозрачный белый фон */
+    padding: 20px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+    .login-form h1 {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        color: black; /* Цвет текста */
+    }
+
+    .login-form label {
+        display: block;
+        text-align: left;
+        margin-bottom: 5px;
+        font-size: 1em;
+        color: black;
+    }
+
+    .login-form input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 1em;
+    }
+
+    .login-form button {
+        width: 100%;
+        padding: 10px;
+        background-color: black;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+        .login-form button:hover {
+            background-color: #333;
+        }

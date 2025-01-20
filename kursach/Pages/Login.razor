@@ -1,0 +1,86 @@
+﻿@page "/login"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<h3>Авторизация</h3>
+
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+    <InputText @bind-Value="loginModel.Email" placeholder="Введите email" />
+    <InputText @bind-Value="loginModel.Password" type="password" placeholder="Введите пароль" />
+    <button type="submit">Войти</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p style="color: red;">@ErrorMessage</p>
+}
+
+@code {
+    private LoginModel loginModel = new();
+    private string ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("ApiClient");
+
+            // Проверяем, авторизован ли пользователь
+            var response = await client.GetAsync("api/users/current-user-id");
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/user-details");
+            }
+        }
+        catch
+        {
+            // Игнорируем ошибки: пользователь не авторизован
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("ApiClient");
+
+            // Двойное хеширование пароля перед отправкой
+            var hashedPassword = HashPassword(HashPassword(loginModel.Password));
+
+            var hashedLoginModel = new LoginModel
+                {
+                    Email = loginModel.Email,
+                    Password = hashedPassword
+                };
+
+            // Отправляем запрос на логин
+            var response = await client.PostAsJsonAsync("api/auth/login", hashedLoginModel);
+            if (response.IsSuccessStatusCode)
+            {
+                // Перенаправляем на защищённую страницу
+                NavigationManager.NavigateTo("/user-details");
+            }
+            else
+            {
+                ErrorMessage = "Ошибка авторизации.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка подключения: {ex.Message}";
+        }
+    }
+
+    private string HashPassword(string password)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+        return Convert.ToBase64String(hashedBytes);
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+}

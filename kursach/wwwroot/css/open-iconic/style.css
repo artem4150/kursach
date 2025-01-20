@@ -1,0 +1,120 @@
+﻿/*namespace kursach.wwwroot.css
+{
+    public class style
+    {
+    }
+}
+*/
+@import url('/images/background.jpg');
+
+.page {
+    display: flex;
+    flex-direction: column; /* Убираем разделение на колонки */
+    height: 100vh;
+}
+
+.main {
+    flex: 1;
+    padding: 0;
+    width: 100%; /* Контент теперь занимает всю ширину */
+}
+
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+}
+
+.background {
+    background: url('/images/background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.content {
+    text-align: center;
+    color: white;
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+p {
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+.buttons {
+    margin-top: 2rem;
+}
+
+button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 0 10px;
+    transition: background-color 0.3s;
+}
+
+    button:hover {
+        background-color: #444;
+    }
+
+/* Стили для страницы регистрации */
+.background {
+    background: url('/images/register-background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh; /* Высота на весь экран */
+    display: flex;
+    justify-content: center; /* Центровка по горизонтали */
+    align-items: center; /* Центровка по вертикали */
+}
+
+.form-container {
+    background-color: rgba(255, 255, 255, 0.9); /* Полупрозрачный белый фон */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень для формы */
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+    .form-container h3 {
+        margin-bottom: 20px;
+    }
+
+    .form-container label {
+        display: block;
+        margin: 10px 0 5px;
+    }
+
+button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+    button:hover {
+        background-color: #444;
+    }
