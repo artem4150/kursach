@@ -9,7 +9,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Добавление контроллеров
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
+
+// Добавил Swagger для тестирование API
+builder.Services.AddSwaggerGen();
 
 // Настройка CORS
 builder.Services.AddCors(options =>
@@ -23,42 +25,30 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Настройка Cookie-аутентификации
-builder.Services.AddAuthentication("Cookies")
-    .AddCookie("Cookies", options =>
-    {
-        options.Cookie.Name = "AppCookie";
-        options.Cookie.SameSite = SameSiteMode.None; // Позволяет использовать Cookie между портами
-        options.Cookie.HttpOnly = true;
-
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.LoginPath = "/api/auth/login"; // Путь для авторизации
-        options.LogoutPath = "/api/auth/logout"; // Путь для выхода
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
-        options.SlidingExpiration = true;
-    });
 
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Настройка HTTPS
-app.UseHttpsRedirection();
-
 // Middleware для обработки запросов
 app.UseRouting();
+
+
+//веб страница API - будет по адресу http://localhost:5000/swagger/index.html
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 // Настройка CORS
 app.UseCors("AllowBlazorApp");
 app.UseStaticFiles();
-// Настройка HTTPS
-app.UseHttpsRedirection();
+
 // Аутентификация и авторизация
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Маршруты для контроллеров
 app.MapControllers();
-app.MapRazorPages();
+
 
 app.Run();

@@ -1,6 +1,8 @@
 ﻿@page "/login"
+@using kursach.Services.AuthAPIService
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
+@inject IAuthAPIService _apiService
 
 <h3>Авторизация</h3>
 
@@ -50,11 +52,21 @@
             var hashedLoginModel = new LoginModel
                 {
                     Email = loginModel.Email,
-                    Password = hashedPassword
+                    Password = loginModel.Password //убрал двойное хеширование
                 };
+            var response = await _apiService.LoginUser(hashedLoginModel);
+
+            if (response)
+            {
+                NavigationManager.NavigateTo("/user-details");
+            }
+            else
+            {
+                ErrorMessage = "Ошибка авторизации.";
+            }
 
             // Отправляем запрос на логин
-            var response = await client.PostAsJsonAsync("api/auth/login", hashedLoginModel);
+            /*var response = await client.PostAsJsonAsync("api/auth/Auth/login", hashedLoginModel);
             if (response.IsSuccessStatusCode)
             {
                 // Перенаправляем на защищённую страницу
@@ -63,7 +75,7 @@
             else
             {
                 ErrorMessage = "Ошибка авторизации.";
-            }
+            }*/
         }
         catch (Exception ex)
         {
