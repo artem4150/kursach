@@ -27,6 +27,7 @@ namespace AuthApi
         public ICollection<OutfitTag>? OutfitTags { get; set; } // Связь с аутфитами
     }
 
+    //хорошей практикой считается 1 файл - 1 класс. Вынеси классы ниже в отдельные файл
     public class Outfit
     {
         public int OutfitId { get; set; }

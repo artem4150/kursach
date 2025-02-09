@@ -7,7 +7,10 @@ namespace AuthApi
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        {
+            Database.EnsureCreated(); //добавил автоматическое создание таблиц в БД, если их нет
+        }
 
         // Таблицы в базе данных
         public DbSet<User> Users { get; set; }

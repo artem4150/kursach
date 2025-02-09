@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Cors;
 
 namespace AuthApi.Controllers
 {
-    [Route("api/auth/[controller]")]
+    [Route("api/auth/[controller]")] //очень длинный путь API получается. обычно делают /api/[controller]
 
     [ApiController]
     [EnableCors("AllowBlazorApp")]
@@ -20,7 +20,7 @@ namespace AuthApi.Controllers
         {
             _context = context;
         }
-
+        
         [HttpPost("register")]
         public async Task<IActionResult> Register(User user)
         {
@@ -51,16 +51,16 @@ namespace AuthApi.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             // Логирование входящих данных для отладки
-            Console.WriteLine($"Получен запрос на вход: Email={request.Email}, PasswordHash={request.PasswordHash}");
+            Console.WriteLine($"Получен запрос на вход: Email={request.Email}, PasswordHash={request.Password}");
 
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.PasswordHash))
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
             {
                 return BadRequest(new { Message = "Email и PasswordHash обязательны." });
             }
 
             // Проверка пользователя
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null || HashPassword(request.PasswordHash) != user.PasswordHash)
+            if (user == null || HashPassword(request.Password) != user.PasswordHash)
             {
                 return Unauthorized(new { Message = "Неверный email или пароль." });
             }
@@ -78,13 +78,21 @@ namespace AuthApi.Controllers
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
             // Устанавливаем Cookie
-            await HttpContext.SignInAsync("Identity.Application", claimsPrincipal, new AuthenticationProperties
+            //Пока закоменентил. Не совсем понимаю зачем нужны куки на стороне сервера, с HttpContext не знаком
+            /*await HttpContext.SignInAsync("Identity.Application", claimsPrincipal, new AuthenticationProperties
             {
                 IsPersistent = true, // Cookie будет сохраняться между сеансами
                 ExpiresUtc = DateTime.UtcNow.AddHours(1) // Время истечения Cookie
-            });
+            });*/
 
             return Ok(new { Message = "Успешный вход", UserId = user.UserId });
+        }
+        
+        // добавил для теста, получение всех пользователей
+        [HttpGet("get_users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            return Ok(await _context.Users.ToListAsync());
         }
 
 
@@ -101,7 +109,7 @@ namespace AuthApi.Controllers
             public string Email { get; set; }
 
             [Required]
-            public string PasswordHash { get; set; }
+            public string Password { get; set; }
         }
     }
 }

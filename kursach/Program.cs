@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+using kursach.Services.AuthAPIService;
 using Microsoft.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,12 +16,14 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<IAuthAPIService, AuthApiServiceService>();
 
 // Настройка HTTP клиента для взаимодействия с API
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7161");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.BaseAddress = new Uri("http://localhost:5000"); //лучше вынеси URI в переменную окружения, или в appsettings. Поменяется адрес-порт, по всему проекту искать и менять их не приветствуется
+    //client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
     UseCookies = true
@@ -45,14 +49,15 @@ builder.Services.AddServerSideBlazor();
 var app = builder.Build();
 app.UseStaticFiles();
 // Настройка HTTPS
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // Настройка CORS
 app.UseCors("AllowBlazorApp");
 
 // Аутентификация и авторизация
-app.UseAuthentication();
-app.UseAuthorization();
+//если у тебя клиент серверное приложение, на клиенте это лишнее, пока комментирую
+//app.UseAuthentication();
+//app.UseAuthorization();
 
 app.UseRouting();
 app.MapBlazorHub();
