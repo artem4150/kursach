@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AuthApi;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,7 +47,16 @@ app.UseStaticFiles();
 // Аутентификация и авторизация
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.Use(async (context, next) =>
+{
+    await next();
+    
+    if (context.Response.StatusCode == 401)
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = "Unauthorized" }));
+    }
+});
 // Маршруты для контроллеров
 app.MapControllers();
 

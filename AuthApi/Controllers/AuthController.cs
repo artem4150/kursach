@@ -22,22 +22,58 @@ namespace AuthApi.Controllers
         }
         
         [HttpPost("register")]
-        public async Task<IActionResult> Register(User user)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
+            // Валидация входных данных
+            if (string.IsNullOrEmpty(request.Email) || 
+                string.IsNullOrEmpty(request.Password) || 
+                string.IsNullOrEmpty(request.Username))
             {
-                return BadRequest(new { Message = "Пользователь с таким email уже существует." });
+                return BadRequest(new { Message = "Все поля обязательны." });
             }
 
-            // Двойное хеширование: сервер хеширует уже хешированный пароль
-            user.PasswordHash = HashPassword(user.PasswordHash);
+            // Проверка существующего пользователя
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (existingUser != null)
+            {
+                return Conflict(new { Message = "Пользователь с таким email уже существует." });
+            }
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Хеширование пароля
+                var passwordHash = HashPassword(request.Password);
 
-            return Ok(new { UserId = user.UserId });
+                // Создание нового пользователя
+                var newUser = new User
+                {
+                    Email = request.Email,
+                    PasswordHash = passwordHash,
+                    Username = request.Username,
+                    CreatedAt = DateTime.UtcNow // Пример дополнительного поля
+                };
+
+                // Добавление в базу
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+
+                // Опционально: автоматическая авторизация после регистрации
+                // var claims = ... (аналогично методу Login)
+                // await HttpContext.SignInAsync(...);
+
+                return Ok(new { 
+                    Message = "Регистрация успешна", 
+                    UserId = newUser.UserId 
+                });
+            }
+            catch (Exception ex)
+            {
+                // Логирование ошибки
+                Console.WriteLine($"Ошибка регистрации: {ex.Message}");
+                return StatusCode(500, new { Message = "Внутренняя ошибка сервера." });
+            }
         }
-
+        
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
@@ -111,5 +147,20 @@ namespace AuthApi.Controllers
             [Required]
             public string Password { get; set; }
         }
+        
+        public class RegisterRequest
+        {
+            [Required]
+            public string Email { get; set; }
+    
+            [Required]
+            public string Password { get; set; }
+    
+            [Required]
+            public string Username { get; set; }
+    
+            // Добавьте другие поля, если необходимо (например, подтверждение пароля)
+        }
+        
     }
 }

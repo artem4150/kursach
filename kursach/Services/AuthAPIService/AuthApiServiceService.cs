@@ -9,18 +9,23 @@ public class AuthApiServiceService : IAuthAPIService
     
     public AuthApiServiceService()
     {
-        _client = new RestClient("http://localhost:5000");
+        _client = new RestClient("http://localhost:5001");
     }
     
     public async Task<bool> LoginUser(Login.LoginModel loginModel)
     {
         var request = new RestRequest("/api/auth/Auth/login");
-        request.AddBody(loginModel);
+        request.AddJsonBody(loginModel);
         var response = await _client.ExecutePostAsync(request);
-        if (response.IsSuccessful)
-        {
-            return true;
-        }
-        return false;
+        return response.IsSuccessful;
     }
+
+    public async Task<bool> RegisterUser(Register.RegisterModel registerModel)
+    {
+        var request = new RestRequest("/api/auth/Auth/register");
+        request.AddJsonBody(registerModel);
+        var response = await _client.ExecutePostAsync(request);
+        return response.IsSuccessful;
+    }
+    
 }

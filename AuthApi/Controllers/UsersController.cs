@@ -21,23 +21,36 @@ namespace AuthApi.Controllers
         [HttpGet("current-user")]
         public async Task<IActionResult> GetCurrentUser()
         {
-            // Получаем ID пользователя из ClaimsPrincipal
-            var userIdFromCookie = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdFromCookie))
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    
+            if (!int.TryParse(userIdClaim, out var userId))
             {
-                return Unauthorized("Пользователь не авторизован.");
+                return Unauthorized("Invalid user identifier");
             }
 
-            // Находим пользователя по ID
-            var userId = int.Parse(userIdFromCookie);
-            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null)
-            {
-                return NotFound("Пользователь не найден.");
-            }
+            var user = await _context.Users
+                .AsNoTracking()
+                .Select(u => new UserInfoDto // Используем DTO для безопасности
+                {
+                    UserId = u.UserId,
+                    Username = u.Username,
+                    Email = u.Email,
+                    CreatedAt = u.CreatedAt
+                })
+                .FirstOrDefaultAsync(u => u.UserId == userId);
 
-            return Ok(new { user.Username, user.Email });
+            return user == null 
+                ? NotFound("User not found") 
+                : Ok(user);
+        }
+
+// DTO модель
+        public class UserInfoDto
+        {
+            public int UserId { get; set; }
+            public string Username { get; set; }
+            public string Email { get; set; }
+            public DateTime CreatedAt { get; set; }
         }
 
 

@@ -21,7 +21,7 @@ builder.Services.AddScoped<IAuthAPIService, AuthApiServiceService>();
 // Ќастройка HTTP клиента дл€ взаимодействи€ с API
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5000"); //лучше вынеси URI в переменную окружени€, или в appsettings. ѕомен€етс€ адрес-порт, по всему проекту искать и мен€ть их не приветствуетс€
+    client.BaseAddress = new Uri("http://localhost:5001"); //лучше вынеси URI в переменную окружени€, или в appsettings. ѕомен€етс€ адрес-порт, по всему проекту искать и мен€ть их не приветствуетс€
     //client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
