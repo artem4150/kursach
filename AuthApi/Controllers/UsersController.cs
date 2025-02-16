@@ -6,9 +6,10 @@ using System.Security.Claims;
 
 namespace AuthApi.Controllers
 {
-    [EnableCors("AllowBlazorApp")]
+    
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("AllowBlazorApp")]
     public class UsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -17,12 +18,12 @@ namespace AuthApi.Controllers
         {
             _context = context;
         }
-        [Authorize]
+
+        [Authorize] // Убедитесь, что авторизация необходима для получения данных
         [HttpGet("current-user")]
         public async Task<IActionResult> GetCurrentUser()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    
             if (!int.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized("Invalid user identifier");
@@ -30,7 +31,7 @@ namespace AuthApi.Controllers
 
             var user = await _context.Users
                 .AsNoTracking()
-                .Select(u => new UserInfoDto // Используем DTO для безопасности
+                .Select(u => new UserInfoDto
                 {
                     UserId = u.UserId,
                     Username = u.Username,
@@ -39,12 +40,12 @@ namespace AuthApi.Controllers
                 })
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
-            return user == null 
-                ? NotFound("User not found") 
+            return user == null
+                ? NotFound("User not found")
                 : Ok(user);
         }
 
-// DTO модель
+        // DTO модель
         public class UserInfoDto
         {
             public int UserId { get; set; }

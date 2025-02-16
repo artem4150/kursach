@@ -1,50 +1,41 @@
 using System.Net.Http.Headers;
+using kursach.Services;
 using kursach.Services.AuthAPIService;
 using Microsoft.AspNetCore.Components;
-
+using System.Net.Http.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 // Настройка CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowBlazorApp", policy =>
-    {
-        policy.WithOrigins("https://localhost:7251")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); // Обязательно для работы с куками
-    });
-});
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowBlazorApp", policy =>
+//    {
+//        policy.WithOrigins("http://localhost:5001")
+//              .AllowAnyHeader()
+//              .AllowAnyMethod()
+//              .AllowCredentials();
+//    });
+//});
+
 
 builder.Services.AddScoped<IAuthAPIService, AuthApiServiceService>();
-
+builder.Services.AddScoped<AuthService>();
 // Настройка HTTP клиента для взаимодействия с API
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5001"); //лучше вынеси URI в переменную окружения, или в appsettings. Поменяется адрес-порт, по всему проекту искать и менять их не приветствуется
-    //client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.BaseAddress = new Uri("http://localhost:5001/"); //лучше вынеси URI в переменную окружения, или в appsettings. Поменяется адрес-порт, по всему проекту искать и менять их не приветствуется
+    
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
     UseCookies = true
 });
-builder.Services.AddAuthentication("Cookies")
-    .AddCookie("Cookies", options =>
-    {
-        options.Cookie.Name = "AppCookie";
-        options.Cookie.SameSite = SameSiteMode.None; // Важно для разных портов
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 
-        // Установка пути для входа и выхода на API
-        options.LoginPath = new PathString("/api/auth/login");
-        options.LogoutPath = new PathString("/api/auth/logout");
-
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
-        options.SlidingExpiration = true;
-    });
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+
+
+
 
 var app = builder.Build();
 app.UseStaticFiles();
@@ -52,7 +43,7 @@ app.UseStaticFiles();
 //app.UseHttpsRedirection();
 
 // Настройка CORS
-app.UseCors("AllowBlazorApp");
+//app.UseCors("AllowBlazorApp");
 
 // Аутентификация и авторизация
 //если у тебя клиент серверное приложение, на клиенте это лишнее, пока комментирую

@@ -1,38 +1,64 @@
-﻿@page "/user-details"
-@inject IHttpClientFactory HttpClientFactory
+﻿@page "/user-info"
+@using kursach.Services
+@inject AuthService AuthService
+@inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
 
 <h3>Информация о пользователе</h3>
 
-@if (!string.IsNullOrEmpty(UserInfo))
+@if (userInfo != null)
 {
-    <p>@UserInfo</p>
+    <p><strong>Имя пользователя:</strong> @userInfo.Username</p>
+    <p><strong>Email:</strong> @userInfo.Email</p>
+    <p><strong>Дата регистрации:</strong> @userInfo.CreatedAt.ToString("dd/MM/yyyy")</p>
 }
-else
+else if (isLoading)
 {
     <p>Загрузка...</p>
 }
+else
+{
+    <p style="color:red;">@ErrorMessage</p>
+}
 
 @code {
-    private string UserInfo;
+    private UserInfoDto userInfo;
+    private bool isLoading = true;
+    private string ErrorMessage;
 
+    // Когда страница загружается, отправляем запрос на получение данных о пользователе
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var client = HttpClientFactory.CreateClient("ApiClient");
+            var response = await AuthService.SendRequestAsync("api/Users/current-user", HttpMethod.Get);
 
-            // Получаем информацию о текущем пользователе
-            UserInfo = await client.GetStringAsync("api/users/current-user-id");
+            if (response.IsSuccessStatusCode)
+            {
+                userInfo = await response.Content.ReadFromJsonAsync<UserInfoDto>();
+            }
+            else
+            {
+                await JsRuntime.InvokeVoidAsync("localStorage.clear");
+
+                ErrorMessage = "Ошибка при загрузке данных пользователя.";
+            }
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        catch (Exception ex)
         {
-            // Если пользователь не авторизован, перенаправляем на логин
-            NavigationManager.NavigateTo("/login");
+            ErrorMessage = $"Ошибка: {ex.Message}";
         }
-        catch
+        finally
         {
-            UserInfo = "Ошибка загрузки данных.";
+            isLoading = false;
         }
+    }
+
+    // DTO модель для получения данных о пользователе
+    public class UserInfoDto
+    {
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

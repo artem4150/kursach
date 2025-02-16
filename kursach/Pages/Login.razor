@@ -1,93 +1,65 @@
 ﻿@page "/login"
+@using kursach.Services
+@using System.Net.Http.Json;
 @using kursach.Services.AuthAPIService
-@inject IHttpClientFactory HttpClientFactory
-@inject NavigationManager NavigationManager
-@inject IAuthAPIService _apiService
 
+@using System.Net.Http.Json
+@inject HttpClient HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+@inject IHttpClientFactory HttpClientFactory
+@inject AuthService AuthService
 <h3>Авторизация</h3>
 
-<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
     <InputText @bind-Value="loginModel.Email" placeholder="Введите email" />
     <InputText @bind-Value="loginModel.Password" type="password" placeholder="Введите пароль" />
     <button type="submit">Войти</button>
 </EditForm>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
+@if (!string.IsNullOrEmpty(errorMessage))
 {
-    <p style="color: red;">@ErrorMessage</p>
+    <p style="color: red;">@errorMessage</p>
 }
 
 @code {
     private LoginModel loginModel = new();
-    private string ErrorMessage;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var client = HttpClientFactory.CreateClient("ApiClient");
-
-            // Проверяем, авторизован ли пользователь
-            var response = await client.GetAsync("api/users/current-user-id");
-            if (response.IsSuccessStatusCode)
-            {
-                NavigationManager.NavigateTo("/user-details");
-            }
-        }
-        catch
-        {
-            // Игнорируем ошибки: пользователь не авторизован
-        }
-    }
+    private string errorMessage;
 
     private async Task HandleLogin()
     {
+        var loginRequest = new { Email = loginModel.Email, Password = loginModel.Password };
+
+        var client = HttpClientFactory.CreateClient("ApiClient");
+
         try
         {
-            var client = HttpClientFactory.CreateClient("ApiClient");
-
-            // Двойное хеширование пароля перед отправкой
-            var hashedPassword = HashPassword(HashPassword(loginModel.Password));
-
-            var hashedLoginModel = new LoginModel
-                {
-                    Email = loginModel.Email,
-                    Password = loginModel.Password //убрал двойное хеширование
-                };
-            var response = await _apiService.LoginUser(hashedLoginModel);
-
-            if (response)
-            {
-                NavigationManager.NavigateTo("/user-details");
-            }
-            else
-            {
-                ErrorMessage = "Ошибка авторизации.";
-            }
-
-            // Отправляем запрос на логин
-            /*var response = await client.PostAsJsonAsync("api/auth/Auth/login", hashedLoginModel);
+            var response = await client.PostAsJsonAsync("api/auth/Auth/login", loginRequest); // Отправляем запрос с относительным URI
             if (response.IsSuccessStatusCode)
             {
-                // Перенаправляем на защищённую страницу
-                NavigationManager.NavigateTo("/user-details");
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                if (result != null && !string.IsNullOrEmpty(result.Token))
+                {
+                    await AuthService.SaveTokenAsync(result.Token);  // Сохраняем токен через AuthService
+                    NavigationManager.NavigateTo("/user-info");
+                }
+                else
+                {
+                    errorMessage = "Ошибка: не получен токен.";
+                }
             }
             else
             {
-                ErrorMessage = "Ошибка авторизации.";
-            }*/
+                errorMessage = "Ошибка авторизации.";
+            }
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Ошибка подключения: {ex.Message}";
+            errorMessage = $"Ошибка: {ex.Message}";
         }
-    }
-
-    private string HashPassword(string password)
-    {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashedBytes);
     }
 
     public class LoginModel
@@ -95,4 +67,15 @@
         public string Email { get; set; }
         public string Password { get; set; }
     }
+
+    public class LoginResponse
+    {
+        public string Token { get; set; }
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; }
+    }
 }
+

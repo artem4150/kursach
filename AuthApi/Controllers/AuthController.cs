@@ -5,6 +5,9 @@ using AuthApi;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace AuthApi.Controllers
 {
@@ -81,27 +84,17 @@ namespace AuthApi.Controllers
             return Ok(new { Message = "Выход выполнен успешно" });
         }
 
-        
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            // Логирование входящих данных для отладки
-            Console.WriteLine($"Получен запрос на вход: Email={request.Email}, PasswordHash={request.Password}");
-
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
-            {
-                return BadRequest(new { Message = "Email и PasswordHash обязательны." });
-            }
-
-            // Проверка пользователя
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || HashPassword(request.Password) != user.PasswordHash)
             {
                 return Unauthorized(new { Message = "Неверный email или пароль." });
             }
 
-            // Успешный вход — создаём Claims
             var claims = new List<Claim>
     {
         new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
@@ -109,21 +102,23 @@ namespace AuthApi.Controllers
         new Claim(ClaimTypes.Name, user.Username),
     };
 
-            // Создаём Principal
-            var claimsIdentity = new ClaimsIdentity(claims, "Identity.Application");
-            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a5f43d82e5c34f8590d5a5b29d5b6a1d7273456d9c12f684f58709b0c9e3da60"));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // Устанавливаем Cookie
-            //Пока закоменентил. Не совсем понимаю зачем нужны куки на стороне сервера, с HttpContext не знаком
-            /*await HttpContext.SignInAsync("Identity.Application", claimsPrincipal, new AuthenticationProperties
-            {
-                IsPersistent = true, // Cookie будет сохраняться между сеансами
-                ExpiresUtc = DateTime.UtcNow.AddHours(1) // Время истечения Cookie
-            });*/
+            var token = new JwtSecurityToken(
+                issuer: "http://localhost:5001",
+                audience: "http://localhost:8081",
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(60),
+                signingCredentials: creds
+            );
 
-            return Ok(new { Message = "Успешный вход", UserId = user.UserId });
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenString = tokenHandler.WriteToken(token);
+
+            return Ok(new { Token = tokenString });
         }
-        
+
         // добавил для теста, получение всех пользователей
         [HttpGet("get_users")]
         public async Task<IActionResult> GetUsers()
