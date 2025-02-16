@@ -3,6 +3,8 @@ using kursach.Services;
 using kursach.Services.AuthAPIService;
 using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
+using kursach.Services.TokenService;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Настройка CORS
@@ -18,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 //});
 
 
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthAPIService, AuthApiServiceService>();
 builder.Services.AddScoped<AuthService>();
 // Настройка HTTP клиента для взаимодействия с API
@@ -28,7 +31,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
-    UseCookies = true
+    UseCookies = true //false?
 });
 
 builder.Services.AddRazorPages();

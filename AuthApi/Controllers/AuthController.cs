@@ -102,6 +102,7 @@ namespace AuthApi.Controllers
         new Claim(ClaimTypes.Name, user.Username),
     };
 
+            var securityKey = Environment.GetEnvironmentVariable("SECURITY_KEY");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a5f43d82e5c34f8590d5a5b29d5b6a1d7273456d9c12f684f58709b0c9e3da60"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

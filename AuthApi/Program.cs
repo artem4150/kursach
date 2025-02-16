@@ -30,7 +30,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-builder.Services.AddSingleton<CloudinaryService>(sp =>
+
+//потестить, скорее всего нужен Scoped
+builder.Services.AddScoped<CloudinaryService>(sp =>
 {
     // Можно взять данные из конфигурации (appsettings.json)
     var config = sp.GetRequiredService<IConfiguration>();
@@ -81,6 +83,8 @@ app.UseRouting();
 
 // Настройка CORS
 app.UseCors("AllowBlazorApp");
+
+//кринж
 app.Use(async (context, next) =>
 {
     var authHeader = context.Request.Headers["Authorization"].ToString();

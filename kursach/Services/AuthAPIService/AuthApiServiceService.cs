@@ -1,4 +1,6 @@
 ﻿using kursach.Pages;
+using kursach.Services.TokenService;
+using Microsoft.JSInterop;
 using RestSharp;
 
 namespace kursach.Services.AuthAPIService;
@@ -6,10 +8,12 @@ namespace kursach.Services.AuthAPIService;
 public class AuthApiServiceService : IAuthAPIService
 {
     private readonly RestClient _client;
+    private readonly ITokenService _tokenService;
     
-    public AuthApiServiceService()
+    public AuthApiServiceService(ITokenService tokenService)
     {
         _client = new RestClient("http://localhost:5001");
+        _tokenService = tokenService;
     }
     
     public async Task<bool> LoginUser(Login.LoginModel loginModel)
