@@ -59,6 +59,7 @@ namespace kursach.Services
 
             return await client.SendAsync(request);
         }
+        
         // Метод для сохранения токена в localStorage
         public async Task SaveTokenAsync(string token)
         {
