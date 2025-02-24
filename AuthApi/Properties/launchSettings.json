@@ -1,5 +1,5 @@
 ﻿{"profiles": {
-  "https": {
+  "http": {
     "commandName": "Project",
     "dotnetRunMessages": true,
     "launchBrowser": true,

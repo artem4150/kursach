@@ -1,0 +1,218 @@
+﻿@page "/all-users"
+@using kursach.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+@inject PublicationService PublicationService
+<Navbar />
+<h3>Все пользователи</h3>
+
+<div class="search-sort">
+    <input type="text" placeholder="Поиск пользователей..." @bind="searchTerm" class="form-control" />
+    <select @bind="selectedSort" class="form-control sort-select">
+        <option value="Followers">По количеству подписчиков</option>
+        <option value="CreationDate">По дате создания</option>
+    </select>
+</div>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p style="color:red;">@ErrorMessage</p>
+}
+else if (FilteredUsers != null && FilteredUsers.Any())
+{
+    <div class="users-grid">
+        @foreach (var user in FilteredUsers)
+        {
+            <div class="user-card" @onclick="() => GoToUserProfile(user.UserId)">
+                <img src="@(string.IsNullOrEmpty(user.ProfilePicture) ? "https://via.placeholder.com/80" : user.ProfilePicture)"
+                     alt="Аватар" class="user-avatar" />
+                <div class="user-details">
+                    <h4>@user.Username</h4>
+                    <p>Подписчиков: @user.FollowersCount</p>
+                </div>
+                <button class="btn subscribe-btn"
+                        @onclick:stopPropagation="true"
+                        @onclick="() => ToggleSubscription(user.UserId)">
+                    @(user.IsSubscribed ? "Отписаться" : "Подписаться")
+                </button>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p>Пользователи не найдены.</p>
+}
+
+@code {
+    private List<UserInfoDto> allUsers = new();
+    private string searchTerm = "";
+    private string selectedSort = "Followers"; // либо "CreationDate"
+    private bool isLoading = true;
+    private string ErrorMessage;
+
+    // Отфильтрованные и отсортированные пользователи
+    private List<UserInfoDto> FilteredUsers => allUsers
+        .Where(u => string.IsNullOrWhiteSpace(searchTerm) ||
+                    u.Username.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .OrderByDescending(u => selectedSort == "Followers" ? u.FollowersCount : 0)
+        .ThenByDescending(u => selectedSort == "CreationDate" ? u.CreatedAt : DateTime.MinValue)
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("ApiClient");
+            var token = await AuthService.GetTokenAsync();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // Получаем список пользователей через API
+            var response = await client.GetAsync("api/auth/Auth/get-users"); // Измените путь если необходимо
+            if (response.IsSuccessStatusCode)
+            {
+                allUsers = await response.Content.ReadFromJsonAsync<List<UserInfoDto>>();
+            }
+            else
+            {
+                ErrorMessage = "Ошибка загрузки пользователей.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoToUserProfile(int userId)
+    {
+        NavigationManager.NavigateTo($"/user/{userId}");
+    }
+
+    private async Task ToggleSubscription(int userId)
+    {
+        try
+        {
+            int currentUserId = await AuthService.GetCurrentUserIdAsync();
+            var user = allUsers.FirstOrDefault(u => u.UserId == userId);
+            if (user == null) return;
+
+            if (!user.IsSubscribed)
+            {
+                await PublicationService.SubscribeAsync(currentUserId, userId);
+                user.IsSubscribed = true;
+            }
+            else
+            {
+                await PublicationService.UnsubscribeAsync(currentUserId, userId);
+                user.IsSubscribed = false;
+            }
+
+            // Обновляем количество подписчиков
+            user.FollowersCount = await PublicationService.GetFollowersCountAsync(userId);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при изменении подписки: {ex.Message}";
+        }
+    }
+
+    public class UserInfoDto
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; }
+        public string ProfilePicture { get; set; }
+        public string Description { get; set; }
+        public int FollowersCount { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsSubscribed { get; set; } // Можно инициализировать false по умолчанию
+    }
+}
+
+<style>
+
+    .search-sort {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        align-items: center;
+    }
+
+        .search-sort input.form-control {
+            flex: 1;
+            padding: 0.5rem;
+            width: 100%; /* Увеличьте ширину */
+            max-width: 500px; /* Ограничьте максимальную ширину */
+            font-size: 1rem; /* Увеличьте шрифт для лучшего восприятия */
+        }
+
+
+        .search-sort select.sort-select {
+            flex: 1;
+            padding: 0.5rem;
+            width: 30%; /* Увеличьте ширину */
+            max-width: 250px; /* Ограничьте максимальную ширину */
+            font-size: 1rem;
+        }
+
+    .users-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .user-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: box-shadow 0.2s;
+    }
+
+        .user-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 0.5rem;
+    }
+
+    .user-details {
+        text-align: center;
+    }
+
+    .subscribe-btn {
+        margin-top: 0.5rem;
+        background-color: #ccc;
+        border: none;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+        .subscribe-btn:hover {
+            background-color: #bbb;
+        }
+
+
+</style>
+

@@ -1,75 +1,64 @@
-﻿/*namespace kursach.wwwroot.css
-{
-    public class style
-    {
-    }
-}
-*/
-/*@import url('/images/background.jpg');
+﻿/* Например, в файле site.css или другом подключаемом CSS-файле */
 
-.page {
-    display: flex;
-    flex-direction: column;*/ /* Убираем разделение на колонки */
-    /*height: 100vh;
+/* Контейнер публикаций организован в виде сетки из 3 колонок */
+.feed {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 равные колонки */
+    gap: 1rem; /* отступ между карточками */
+    padding: 1rem;
 }
 
-.main {
-    flex: 1;
-    padding: 0;
-    width: 100%;*/ /* Контент теперь занимает всю ширину */
-/*}
-
-
-body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: 'Arial', sans-serif;
+/* Стили для отдельных карточек публикаций */
+.post-card {
+    background: #fafafa;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
 }
-
-.background {
-    background: url('/images/background.jpg') no-repeat center center fixed;
-    background-size: cover;
-    height: 100%;
+.navbar {
     display: flex;
     align-items: center;
-    justify-content: center;
-}
-
-.content {
-    text-align: center;
-    color: white;
-    backdrop-filter: blur(5px);
-    padding: 20px;
-    border-radius: 10px;
-}
-
-h1 {
-    font-size: 3rem;
+    background-color: #f5f5f5;
+    padding: 0.5rem 1rem;
     margin-bottom: 1rem;
 }
 
-p {
-    font-size: 1.2rem;
-    line-height: 1.5;
-}
-
-.buttons {
-    margin-top: 2rem;
-}
-
-button {
-    background-color: black;
-    color: white;
+.nav-btn {
+    background: none;
     border: none;
-    padding: 10px 20px;
     font-size: 1rem;
+    margin-right: 1rem;
     cursor: pointer;
-    border-radius: 5px;
-    margin: 0 10px;
-    transition: background-color 0.3s;
 }
 
-    button:hover {
-        background-color: #444;
-    }*/
+    .nav-btn:hover {
+        text-decoration: underline;
+    }
+
+.feed {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.post-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.post-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.post-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+}

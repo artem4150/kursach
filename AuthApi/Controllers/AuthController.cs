@@ -120,12 +120,54 @@ namespace AuthApi.Controllers
         }
 
         // добавил для теста, получение всех пользователей
-        [HttpGet("get_users")]
-        public async Task<IActionResult> GetUsers()
-        {
-            return Ok(await _context.Users.ToListAsync());
-        }
+        //[HttpGet("get_users")]
+        //public async Task<IActionResult> GetUsers()
+        //{
+        //    return Ok(await _context.Users.ToListAsync());
+        //}
 
+        [HttpGet("get-users")]
+        public async Task<IActionResult> GetUsers([FromQuery] string sortBy = "followers")  // Устанавливаем значение по умолчанию
+        {
+            try
+            {
+                IQueryable<User> query = _context.Users;
+
+                // Сортировка по количеству подписчиков или дате создания
+                if (sortBy == "followers")
+                {
+                    query = query.OrderByDescending(u => _context.Followers.Count(f => f.FollowedUserId == u.UserId));
+                }
+                else if (sortBy == "createdAt")
+                {
+                    query = query.OrderBy(u => u.CreatedAt);
+                }
+                else
+                {
+                    // Если передан неправильный параметр, можно просто вернуть пользователей без сортировки
+                    query = query.OrderBy(u => u.Username);  // например, сортировка по имени
+                }
+
+                var users = await query
+                    .Select(u => new UserInfoDto
+                    {
+                        UserId = u.UserId,
+                        Username = u.Username,
+                        ProfilePicture = u.ProfilePicture,
+                        Description = u.Description,
+                        FollowersCount = _context.Followers.Count(f => f.FollowedUserId == u.UserId)
+                    })
+                    .ToListAsync();
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                // Логирование ошибки
+                Console.WriteLine($"Ошибка при загрузке пользователей: {ex.Message}");
+                return StatusCode(500, "Внутренняя ошибка сервера");
+            }
+        }
 
 
         private string HashPassword(string password)

@@ -3,23 +3,18 @@ using kursach.Services;
 using kursach.Services.AuthAPIService;
 using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
+using Microsoft.JSInterop;
+
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Настройка CORS
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowBlazorApp", policy =>
-//    {
-//        policy.WithOrigins("http://localhost:5001")
-//              .AllowAnyHeader()
-//              .AllowAnyMethod()
-//              .AllowCredentials();
-//    });
-//});
+
 
 
 builder.Services.AddScoped<IAuthAPIService, AuthApiServiceService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<PublicationService>();
 // Настройка HTTP клиента для взаимодействия с API
 builder.Services.AddHttpClient("ApiClient", client =>
 {
@@ -31,6 +26,10 @@ builder.Services.AddHttpClient("ApiClient", client =>
     UseCookies = true
 });
 
+
+
+
+
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
@@ -39,16 +38,8 @@ builder.Services.AddServerSideBlazor();
 
 var app = builder.Build();
 app.UseStaticFiles();
-// Настройка HTTPS
-//app.UseHttpsRedirection();
 
-// Настройка CORS
-//app.UseCors("AllowBlazorApp");
 
-// Аутентификация и авторизация
-//если у тебя клиент серверное приложение, на клиенте это лишнее, пока комментирую
-//app.UseAuthentication();
-//app.UseAuthorization();
 
 app.UseRouting();
 app.MapBlazorHub();

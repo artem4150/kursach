@@ -26,12 +26,15 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.5.0" />
+    
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0" />
     <PackageReference Include="RestSharp" Version="112.1.0" />
     <PackageReference Include="System.Net.Http.Json" Version="8.0.1" />
+	
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Models\" />
     <Folder Include="Новая папка\" />
   </ItemGroup>
 

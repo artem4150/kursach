@@ -1,0 +1,77 @@
+﻿@page "/edit-post/{OutfitId}"
+@using kursach.Services
+@inject PublicationService PublicationService
+@inject NavigationManager NavigationManager
+<Navbar />
+<h3>Редактирование публикации</h3>
+
+<EditForm Model="post" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="Title">Заголовок</label>
+        <InputText id="Title" @bind-Value="post.Title" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label for="Description">Описание</label>
+        <InputTextArea id="Description" @bind-Value="post.Description" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+</EditForm>
+
+@code {
+    [Parameter] public int OutfitId { get; set; }
+    private PublicationService.PostDto post = new PublicationService.PostDto();
+    private bool isLoading = true;
+    private string ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Получаем публикацию для редактирования по OutfitId
+            var posts = await PublicationService.GetUserPostsAsync(OutfitId);
+
+            if (posts != null && posts.Any())
+            {
+                post = posts.FirstOrDefault(); // Привязка данных
+            }
+            else
+            {
+                ErrorMessage = "Не удалось найти публикацию.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var result = await PublicationService.EditPostAsync(post.OutfitId, post.Title, post.Description);
+
+            if (result != null)
+            {
+                NavigationManager.NavigateTo("/profile");
+            }
+            else
+            {
+                ErrorMessage = "Ошибка при сохранении публикации.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+    }
+}

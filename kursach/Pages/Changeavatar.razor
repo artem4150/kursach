@@ -1,0 +1,92 @@
+﻿@page "/change-avatar"
+@using System.Net.Http.Headers
+@using System.Net.Http.Json
+@using kursach.Services
+@inject AuthService AuthService
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<h3>Изменить аватар</h3>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p style="color:red;">@ErrorMessage</p>
+}
+
+<EditForm OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Выберите изображение для аватара:</label>
+        <InputFile OnChange="HandleFileSelected" />
+    </div>
+    <button type="submit" class="btn btn-primary">Обновить аватар</button>
+</EditForm>
+
+@code {
+    private IBrowserFile selectedFile;
+    private bool isLoading = false;
+    private string ErrorMessage;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (selectedFile == null)
+        {
+            ErrorMessage = "Пожалуйста, выберите изображение.";
+            return;
+        }
+
+        isLoading = true;
+        ErrorMessage = string.Empty;
+
+        try
+        {
+            // Формируем MultipartFormDataContent для отправки файла
+            var content = new MultipartFormDataContent();
+
+            // Ограничиваем размер файла, например, до 5 МБ
+            var stream = selectedFile.OpenReadStream(5 * 1024 * 1024);
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(selectedFile.ContentType);
+            content.Add(fileContent, "ImageFile", selectedFile.Name);
+
+            // Создаем клиента с именем "ApiClient"
+            var client = HttpClientFactory.CreateClient("ApiClient");
+
+            // Получаем токен и добавляем его в заголовок
+            var token = await AuthService.GetTokenAsync();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // Отправляем POST-запрос на API для изменения аватара
+            var response = await client.PostAsync("api/users/change-avatar", content);
+            if (response.IsSuccessStatusCode)
+            {
+                // Если успешно, перенаправляем пользователя обратно на страницу профиля
+                NavigationManager.NavigateTo("/profile");
+            }
+            else
+            {
+                ErrorMessage = $"Ошибка: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

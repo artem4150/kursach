@@ -1,7 +1,5 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using Npgsql.BackendMessages;
-using System.Security.Principal;
 
 public class CloudinaryService
 {
@@ -22,8 +20,8 @@ public class CloudinaryService
         {
             var uploadParams = new ImageUploadParams
             {
-                File = new FileDescription(file.FileName, stream),
-                // Дополнительные параметры (например, трансформации) можно указать здесь
+                File = new FileDescription(file.FileName, stream)
+                // При необходимости можно добавить трансформации, папку, метаданные и т.д.
             };
 
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);

@@ -30,9 +30,8 @@ builder.Services.AddCors(options =>
 });
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-builder.Services.AddSingleton<CloudinaryService>(sp =>
+builder.Services.AddScoped<CloudinaryService>(sp =>
 {
-    // Можно взять данные из конфигурации (appsettings.json)
     var config = sp.GetRequiredService<IConfiguration>();
     var cloudName = config["Cloudinary:CloudName"];
     var apiKey = config["Cloudinary:ApiKey"];

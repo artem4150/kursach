@@ -1,0 +1,302 @@
+﻿@page "/user/{OtherUserId:int}"
+
+@using kursach.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject AuthService AuthService
+@inject PublicationService PublicationService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<Navbar />
+
+<h3>Профиль пользователя</h3>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p style="color:red;">@ErrorMessage</p>
+}
+else if (UserProfile != null && UserPosts != null)
+{
+    <div class="other-profile-container">
+        <div class="header-section">
+            <img class="profile-avatar"
+                 src="@(string.IsNullOrEmpty(UserProfile.ProfilePicture)
+                       ? "https://via.placeholder.com/80"
+                       : UserProfile.ProfilePicture)"
+                 alt="Аватар" />
+            <div class="user-info">
+                <h2>@UserProfile.Username</h2>
+                <p>Подписчиков: @FollowersCount</p>
+                <p>Описание: @UserProfile.Description</p>
+            </div>
+            <button class="btn" @onclick="ToggleSubscription">
+                @(isSubscribed ? "Отписаться" : "Подписаться")
+            </button>
+        </div>
+
+        <h3>Публикации</h3>
+        <div class="posts-grid">
+            @foreach (var post in UserPosts)
+            {
+                <div class="post-card" @onclick="() => GoToPost(post.OutfitId)">
+                    <img src="@post.ImageUrl" alt="Публикация" />
+                    <p>@post.Title</p>
+                    <p>@post.Description</p>
+                    <div class="post-actions">
+                        <!-- Убираем MouseEventArgs из метода и используем stopPropagation в разметке -->
+                        <button class="btn"
+                                @onclick="() => LikePost(post.OutfitId)"
+                                @onclick:stopPropagation="true">
+                            Лайк (@post.LikesCount)
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p>Профиль пользователя не найден.</p>
+}
+
+@code {
+    [Parameter]
+    public int OtherUserId { get; set; }  // Идентификатор чужого профиля
+
+    private UserProfileDto UserProfile;
+    private List<PublicationService.PostDto> UserPosts = new();
+    private bool isLoading = true;
+    private string ErrorMessage;
+    private bool isSubscribed = false;
+    private int FollowersCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // 1. Загружаем данные о пользователе
+            await LoadUserProfile();
+
+            // 2. Загружаем его публикации
+            await LoadUserPosts();
+
+            // 3. Проверяем, подписан ли текущий пользователь на этого
+            var currentUserId = await AuthService.GetCurrentUserIdAsync();
+            isSubscribed = await PublicationService.IsSubscribedAsync(currentUserId, OtherUserId);
+
+            // 4. Загружаем количество подписчиков
+            FollowersCount = await PublicationService.GetFollowersCountAsync(OtherUserId);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadUserProfile()
+    {
+        // Предположим, что у вас есть метод в API: GET api/users/{userId}
+        // Или можно использовать уже существующий метод, если он возвращает нужные данные
+        var client = HttpClientFactory.CreateClient("ApiClient");
+        var token = await AuthService.GetTokenAsync();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        // В качестве примера используем: GET api/users/{userId}
+        // Убедитесь, что метод API действительно существует.
+        var response = await client.GetFromJsonAsync<UserProfileDto>($"api/users/single/{OtherUserId}");
+        if (response != null)
+        {
+            UserProfile = response;
+        }
+        else
+        {
+            ErrorMessage = "Не удалось получить данные пользователя.";
+        }
+    }
+
+    private async Task LoadUserPosts()
+    {
+        // Получаем все публикации этого пользователя
+        UserPosts = await PublicationService.GetUserPostsAsync(OtherUserId);
+    }
+
+    private async Task ToggleSubscription()
+    {
+        try
+        {
+            var currentUserId = await AuthService.GetCurrentUserIdAsync();
+            if (!isSubscribed)
+            {
+                // Подписываемся
+                await PublicationService.SubscribeAsync(currentUserId, OtherUserId);
+                isSubscribed = true;
+            }
+            else
+            {
+                // Отписываемся
+                await PublicationService.UnsubscribeAsync(currentUserId, OtherUserId);
+                isSubscribed = false;
+            }
+
+            // Обновляем количество подписчиков
+            FollowersCount = await PublicationService.GetFollowersCountAsync(OtherUserId);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при подписке/отписке: {ex.Message}";
+        }
+    }
+
+    private async Task LikePost(int outfitId)
+    {
+        try
+        {
+            var updatedPost = await PublicationService.LikePostAsync(outfitId);
+            var post = UserPosts.FirstOrDefault(p => p.OutfitId == outfitId);
+            if (post != null)
+            {
+                post.LikesCount = updatedPost.LikesCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при лайке: {ex.Message}";
+        }
+    }
+
+    private void Subscriptions() => NavigationManager.NavigateTo("/subscriptions");
+    private void GoToFeed() => NavigationManager.NavigateTo("/feed");
+    private void GoToProfile() => NavigationManager.NavigateTo("/profile");
+    private void GoToCreatePublication() => NavigationManager.NavigateTo("/create-publication");
+    
+
+    private void GoToPost(int postId)
+    {
+        NavigationManager.NavigateTo($"/post/{postId}");
+    }
+
+    // DTO для пользователя
+    public class UserProfileDto
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; }
+        public string ProfilePicture { get; set; }
+        public string Description { get; set; }
+        public int FollowersCount { get; set; }  // если нужно
+                                                 // Другие поля при необходимости (Email и т.д.)
+    }
+}
+
+    <style>
+
+    /* Шапка (navbar) */
+    .navbar {
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        padding: 0.5rem 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        margin-bottom: 1rem;
+    }
+
+    .navbar-container {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .nav-btn {
+        background: none;
+        border: none;
+        font-size: 1rem;
+        margin-right: 1rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+    }
+
+        .nav-btn:hover {
+            background-color: #eaeaea;
+        }
+    .other-profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .header-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .btn {
+        background-color: #ccc;
+        border: none;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+        .btn:hover {
+            background-color: #bbb;
+        }
+
+    .posts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .post-card {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: box-shadow 0.2s;
+    }
+
+        .post-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .post-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+    .post-actions {
+        margin-top: 0.5rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    </style>

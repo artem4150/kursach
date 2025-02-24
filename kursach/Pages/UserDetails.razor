@@ -3,7 +3,7 @@
 @inject AuthService AuthService
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
-
+<Navbar />
 <h3>Информация о пользователе</h3>
 
 @if (userInfo != null)
@@ -21,12 +21,14 @@ else
     <p style="color:red;">@ErrorMessage</p>
 }
 
+<button class="btn-feed" @onclick="NavigateToFeed">Перейти к ленте публикаций</button>
+<button class="btn-create" @onclick="NavigateToCreatePublication">Создать публикацию</button>
+
 @code {
     private UserInfoDto userInfo;
     private bool isLoading = true;
     private string ErrorMessage;
 
-    // Когда страница загружается, отправляем запрос на получение данных о пользователе
     protected override async Task OnInitializedAsync()
     {
         try
@@ -40,7 +42,6 @@ else
             else
             {
                 await JsRuntime.InvokeVoidAsync("localStorage.clear");
-
                 ErrorMessage = "Ошибка при загрузке данных пользователя.";
             }
         }
@@ -54,7 +55,16 @@ else
         }
     }
 
-    // DTO модель для получения данных о пользователе
+    private void NavigateToFeed()
+    {
+        NavigationManager.NavigateTo("/feed");
+    }
+
+    private void NavigateToCreatePublication()
+    {
+        NavigationManager.NavigateTo("/create-publication");
+    }
+
     public class UserInfoDto
     {
         public string Username { get; set; }

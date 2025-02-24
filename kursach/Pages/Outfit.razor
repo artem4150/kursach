@@ -1,0 +1,212 @@
+﻿@page "/feed"
+@using kursach.Services
+@inject PublicationService PublicationService
+@inject NavigationManager NavigationManager
+
+<!-- Шапка сайта -->
+<Navbar />
+
+<div class="content-container">
+    <h3 class="page-title">Лента публикаций</h3>
+
+    @if (isLoading)
+    {
+        <p>Загрузка...</p>
+    }
+    else if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <p style="color:red;">@ErrorMessage</p>
+    }
+    else if (posts != null && posts.Any())
+    {
+        <div class="feed">
+            @foreach (var post in posts)
+            {
+                <div class="post-card" @onclick="() => OpenPost(post.OutfitId)" style="cursor:pointer;">
+                    <h4>@post.Title</h4>
+                    @if (!string.IsNullOrEmpty(post.ImageUrl))
+                    {
+                        <img src="@post.ImageUrl" alt="Изображение публикации" class="post-image" />
+                    }
+                    <p>
+                        <small>
+                            Автор: @post.AuthorUsername,<br />
+                            Дата: @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </small>
+                    </p>
+                    <div class="post-actions">
+                        <button class="btn" @onclick:stopPropagation="true" @onclick="() => LikePost(post.OutfitId)">
+                            Лайк (@post.LikesCount)
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p>Публикаций пока нет.</p>
+    }
+</div>
+
+@code {
+    private List<PublicationService.PostDto> posts;
+    private bool isLoading = true;
+    private string ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            posts = await PublicationService.GetPostsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LikePost(int outfitId)
+    {
+        try
+        {
+            var updatedPost = await PublicationService.LikePostAsync(outfitId);
+            var index = posts.FindIndex(p => p.OutfitId == outfitId);
+            if (index >= 0)
+            {
+                posts[index] = updatedPost;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при лайке публикации: {ex.Message}";
+        }
+    }
+
+    private void OpenPost(int outfitId)
+    {
+        NavigationManager.NavigateTo($"/post/{outfitId}");
+    }
+
+    private void GoToProfile()
+    {
+        NavigationManager.NavigateTo("/profile");
+    }
+
+    private void GoToFeed()
+    {
+        NavigationManager.NavigateTo("/feed");
+    }
+    
+    private void Subscriptions()
+    {
+        NavigationManager.NavigateTo("/subscriptions");
+    }
+
+    private void GoToCreatePublication()
+    {
+        NavigationManager.NavigateTo("/create-publication");
+    }
+    private void GoToCreateAllUsers()
+    {
+        NavigationManager.NavigateTo("/all-users");
+    }
+    
+}
+
+
+<style>
+    /* Общие стили для всей страницы */
+    body, html {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    /* Шапка (navbar) */
+    .navbar {
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        padding: 0.5rem 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .navbar-container {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .nav-btn {
+        background: none;
+        border: none;
+        font-size: 1rem;
+        margin-right: 1rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+    }
+
+        .nav-btn:hover {
+            background-color: #eaeaea;
+        }
+
+    /* Контейнер для основного контента */
+    .content-container {
+        max-width: 1200px;
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+
+    /* Заголовок страницы */
+    .page-title {
+        margin-top: 0;
+    }
+
+    /* Сетка ленты публикаций */
+    .feed {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .post-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .post-image {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin-top: 0.5rem;
+    }
+
+    .post-actions {
+        margin-top: 0.5rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn {
+        background-color: #ccc;
+        border: none;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+    }
+
+        .btn:hover {
+            background-color: #bbb;
+        }
+</style>

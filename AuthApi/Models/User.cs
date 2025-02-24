@@ -11,6 +11,10 @@ namespace AuthApi
         //public string? ProfilePicture { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        // Новые поля для фото профиля и описания
+        public string? ProfilePicture { get; set; }  // URL изображения профиля
+        public string? Description { get; set; }     // Описание профиля
+
         public ICollection<Follower>? Followers { get; set; }  // Подписчики
         public ICollection<Follower>? Followings { get; set; }  // Подписки
         public ICollection<Outfit>? Outfits { get; set; }
@@ -39,7 +43,7 @@ namespace AuthApi
         public string? Occasion { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int UserId { get; set; }
-
+        public string? ImageUrl { get; set; }
         public User User { get; set; }
         public ICollection<OutfitTag>? OutfitTags { get; set; } // Связь с тегами
         public ICollection<Like>? Likes { get; set; }
