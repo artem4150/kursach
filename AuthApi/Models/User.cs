@@ -1,5 +1,7 @@
 ﻿
 
+using Newtonsoft.Json;
+
 namespace AuthApi
 {
     public class User
@@ -44,9 +46,13 @@ namespace AuthApi
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int UserId { get; set; }
         public string? ImageUrl { get; set; }
+
         public User User { get; set; }
-        public ICollection<OutfitTag>? OutfitTags { get; set; } // Связь с тегами
+
+        public ICollection<OutfitTag>? OutfitTags { get; set; }
+
         public ICollection<Like>? Likes { get; set; }
+
         public ICollection<Comment>? Comments { get; set; }
     }
 

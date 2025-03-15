@@ -29,6 +29,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+
+
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Services.AddScoped<CloudinaryService>(sp =>
 {

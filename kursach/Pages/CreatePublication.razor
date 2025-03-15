@@ -2,10 +2,10 @@
 @using System.Net.Http.Headers
 @using System.Net.Http.Json
 @using kursach.Services
-@inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject IHttpClientFactory HttpClientFactory
-<Navbar />
+@inject AuthService AuthService
+
 <h3>Создать публикацию</h3>
 
 @if (isLoading)
@@ -21,30 +21,46 @@ else if (!string.IsNullOrEmpty(ErrorMessage))
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div>
+    <div class="form-group">
         <label>Заголовок:</label>
         <InputText @bind-Value="newPublication.Title" class="form-control" />
     </div>
-    <div>
+    <div class="form-group">
         <label>Описание:</label>
         <InputTextArea @bind-Value="newPublication.Description" class="form-control" />
     </div>
-    <div>
-        <label>Изображение (опционально):</label>
-        <InputFile OnChange="HandleFileSelected" />
+    <div class="form-group">
+        <label>Сезон:</label>
+        <InputText @bind-Value="newPublication.Season" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>Стиль:</label>
+        <InputText @bind-Value="newPublication.Style" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>Пол (Gender):</label>
+        <InputText @bind-Value="newPublication.Gender" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>Случай (Occasion):</label>
+        <InputText @bind-Value="newPublication.Occasion" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>Изображения (можно выбрать несколько):</label>
+        <InputFile OnChange="HandleFileSelected" multiple />
     </div>
     <button type="submit" class="btn btn-primary">Опубликовать</button>
 </EditForm>
 
 @code {
     private NewPublicationDto newPublication = new();
-    private IBrowserFile selectedFile;
+    private List<IBrowserFile> selectedFiles = new();
     private bool isLoading = false;
     private string ErrorMessage;
 
-    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    private void HandleFileSelected(InputFileChangeEventArgs e)
     {
-        selectedFile = e.File;
+        selectedFiles = e.GetMultipleFiles().ToList();
     }
 
     private async Task HandleValidSubmit()
@@ -54,34 +70,33 @@ else if (!string.IsNullOrEmpty(ErrorMessage))
 
         try
         {
-            // Формируем MultipartFormDataContent для отправки формы с файлом
             var content = new MultipartFormDataContent();
-
             content.Add(new StringContent(newPublication.Title ?? string.Empty), "Title");
             content.Add(new StringContent(newPublication.Description ?? string.Empty), "Description");
+            content.Add(new StringContent(newPublication.Season ?? string.Empty), "Season");
+            content.Add(new StringContent(newPublication.Style ?? string.Empty), "Style");
+            content.Add(new StringContent(newPublication.Gender ?? string.Empty), "Gender");
+            content.Add(new StringContent(newPublication.Occasion ?? string.Empty), "Occasion");
 
-            if (selectedFile != null)
+            if (selectedFiles.Any())
             {
-                // Ограничиваем размер файла (например, 10 МБ)
-                var stream = selectedFile.OpenReadStream(10 * 1024 * 1024);
-                var fileContent = new StreamContent(stream);
-                fileContent.Headers.ContentType = new MediaTypeHeaderValue(selectedFile.ContentType);
-                content.Add(fileContent, "ImageFile", selectedFile.Name);
+                foreach (var file in selectedFiles)
+                {
+                    var stream = file.OpenReadStream(10 * 1024 * 1024);
+                    var fileContent = new StreamContent(stream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+                    content.Add(fileContent, "Images", file.Name);
+                }
             }
 
-            // Создаем клиента с именем "ApiClient"
             var client = HttpClientFactory.CreateClient("ApiClient");
-
-            // Получаем токен через AuthService
+            // Получаем токен и устанавливаем заголовок авторизации
             var token = await AuthService.GetTokenAsync();
-            // Добавляем заголовок Authorization
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            // Отправляем POST-запрос на API для создания публикации с изображением
-            var response = await client.PostAsync("api/Outfits/create-with-image", content);
+            var response = await client.PostAsync("api/Outfits/create-with-images", content);
             if (response.IsSuccessStatusCode)
             {
-                // После успешного создания переходим на ленту публикаций
                 NavigationManager.NavigateTo("/feed");
             }
             else
@@ -98,11 +113,14 @@ else if (!string.IsNullOrEmpty(ErrorMessage))
             isLoading = false;
         }
     }
-    
 
     public class NewPublicationDto
     {
         public string Title { get; set; }
         public string Description { get; set; }
+        public string Season { get; set; }
+        public string Style { get; set; }
+        public string Gender { get; set; }
+        public string Occasion { get; set; }
     }
 }

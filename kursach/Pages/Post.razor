@@ -19,17 +19,23 @@
     else if (post != null)
     {
         <div class="post-details">
-            <!-- Левая колонка с изображением -->
+            <!-- Левая колонка с изображениями (карусель) -->
             <div class="post-image-section">
                 @if (!string.IsNullOrEmpty(post.ImageUrl))
                 {
-                    <img src="@post.ImageUrl" alt="Изображение публикации" class="post-image" />
+                    var images = post.ImageUrl.Split('|', System.StringSplitOptions.RemoveEmptyEntries);
+                    <div class="image-carousel">
+                        @foreach (var img in images)
+                        {
+                            <img src="@img" alt="Изображение публикации" class="carousel-image" />
+                        }
+                    </div>
                 }
             </div>
 
             <!-- Правая колонка с информацией -->
             <div class="post-info-section">
-                <!-- Информация о пользователе, выложившем пост -->
+                <!-- Информация о пользователе -->
                 <div class="post-author-info" @onclick="() => GoToUserProfile(post.AuthorId)" style="cursor:pointer;">
                     <img src="@(string.IsNullOrEmpty(post.AuthorAvatar) ? "https://via.placeholder.com/80" : post.AuthorAvatar)" alt="Аватар пользователя" class="user-avatar" />
                     <div class="user-info">
@@ -92,7 +98,7 @@
     private bool isLoading = true;
     private string ErrorMessage;
 
-    // Количество подписчиков автора публикации
+    // Пример количества подписчиков и переменных для комментариев и подписки
     private int UserFollowersCount = 0;
     private string newCommentText = string.Empty;
     private bool isSubscribed = false;
@@ -101,10 +107,7 @@
     {
         try
         {
-            // Загрузка публикации по Id
             post = await LoadSinglePost(Id);
-
-            // Получаем текущего пользователя
             int currentUserId = await AuthService.GetCurrentUserIdAsync();
             isSubscribed = await PublicationService.IsSubscribedAsync(currentUserId, post.AuthorId);
             UserFollowersCount = await PublicationService.GetFollowersCountAsync(post.AuthorId);
@@ -121,6 +124,8 @@
 
     private async Task<PublicationService.PostDto> LoadSinglePost(int outfitId)
     {
+        // Пример получения поста: здесь получаем все посты и выбираем нужный.
+        // Лучше добавить отдельный метод для получения одного поста.
         var allPosts = await PublicationService.GetPostsAsync();
         return allPosts.FirstOrDefault(p => p.OutfitId == outfitId);
     }
@@ -184,184 +189,180 @@
             ErrorMessage = $"Ошибка при изменении подписки: {ex.Message}";
         }
     }
+
     private void GoToUserProfile(int authorId)
     {
         NavigationManager.NavigateTo($"/user/{authorId}");
     }
-    private void Subscriptions() => NavigationManager.NavigateTo("/subscriptions");
-    private void GoToFeed() => NavigationManager.NavigateTo("/feed");
-    private void GoToProfile() => NavigationManager.NavigateTo("/profile");
-    private void GoToCreatePublication() => NavigationManager.NavigateTo("/create-publication");
-    private void GoToPost(int postId) => NavigationManager.NavigateTo($"/post/{postId}");
 }
 
-
-
-
 <style>
-    /* Шапка (navbar) */
-    .navbar {
-        background-color: #f5f5f5;
-        border-bottom: 1px solid #ddd;
-        padding: 0.5rem 1rem;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        margin-bottom: 1rem;
-    }
+/* Общие стили */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
 
-    .navbar-container {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
+/* Шапка сайта */
+.navbar {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    padding: 0.5rem 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    margin-bottom: 1rem;
+}
 
-    .nav-btn {
-        background: none;
-        border: none;
-        font-size: 1rem;
-        margin-right: 1rem;
-        cursor: pointer;
-        padding: 0.5rem 1rem;
-    }
+/* Контейнер для шапки */
+.navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
-    .nav-btn:hover {
-        background-color: #eaeaea;
-    }
+/* Кнопки шапки */
+.nav-btn {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    margin-right: 1rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+}
+.nav-btn:hover {
+    background-color: #eaeaea;
+}
 
-    /* Контейнер страницы */
-    .post-page-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1rem;
-    }
+/* Контейнер страницы */
+.post-page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
 
-    /* Стили для блока с деталями публикации */
-    .post-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
+/* Блок деталей публикации */
+.post-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
 
-    /* Левая колонка (изображение) */
-    .post-image-section {
-        flex: 1;
-        min-width: 300px;
-    }
+/* Левая колонка с каруселью изображений */
+.post-image-section {
+    flex: 1;
+    min-width: 300px;
+}
+.image-carousel {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.carousel-image {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+}
 
-    .post-image {
-        max-width: 100%;
-        border-radius: 4px;
-    }
+/* Правая колонка с информацией о посте */
+.post-info-section {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+}
 
-    /* Правая колонка (информация о посте, автор, лайки, комментарии) */
-    .post-info-section {
-        flex: 1;
-        min-width: 300px;
-        display: flex;
-        flex-direction: column;
-    }
+/* Информация о пользователе */
+.post-author-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.username {
+    font-weight: bold;
+    margin: 0;
+}
+.followers-count {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+.subscribe-btn {
+    margin-left: auto;
+    background-color: #ccc;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
 
-    /* Информация о пользователе */
-    .post-author-info {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
+/* Название и описание */
+.post-title {
+    margin: 0 0 0.5rem 0;
+}
+.post-description {
+    margin: 0 0 1rem 0;
+}
 
-    .user-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
+/* Лайки */
+.like-section {
+    margin-bottom: 1rem;
+}
 
-    .user-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
+/* Комментарии */
+.comments-section {
+    margin-top: 1rem;
+}
+.comment-card {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+.comment-meta {
+    font-size: 0.85rem;
+    color: #666;
+}
 
-    .username {
-        font-weight: bold;
-        margin: 0;
-    }
-
-    .followers-count {
-        font-size: 0.9rem;
-        color: #666;
-        margin: 0;
-    }
-
-    .subscribe-btn {
-        margin-left: auto;
-        background-color: #ccc;
-        border: none;
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-
-    /* Название и описание */
-    .post-title {
-        margin: 0 0 0.5rem 0;
-    }
-
-    .post-description {
-        margin: 0 0 1rem 0;
-    }
-
-    /* Лайки */
-    .like-section {
-        margin-bottom: 1rem;
-    }
-
-    /* Комментарии */
-    .comments-section {
-        margin-top: 1rem;
-    }
-
-    .comment-card {
-        background-color: #f9f9f9;
-        border: 1px solid #eee;
-        padding: 0.5rem;
-        margin-bottom: 0.5rem;
-        border-radius: 4px;
-    }
-
-    .comment-meta {
-        font-size: 0.85rem;
-        color: #666;
-    }
-
-    /* Форма комментария */
-    .comment-form {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-    }
-
-    .form-control {
-        width: 100%;
-        min-height: 60px;
-        padding: 0.5rem;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-    }
-
-    .btn {
-        background-color: #ccc;
-        border: none;
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-
-    .btn:hover {
-        background-color: #bbb;
-    }
+/* Форма комментария */
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.form-control {
+    width: 100%;
+    min-height: 60px;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+.btn {
+    background-color: #ccc;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.btn:hover {
+    background-color: #bbb;
+}
 </style>

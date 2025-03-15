@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
@@ -94,48 +95,71 @@ namespace AuthApi.Controllers
             return Ok(posts);
         }
 
-        [Authorize]
-        [HttpPost("create-with-image")]
-        public async Task<IActionResult> CreateOutfitWithImage([FromForm] CreateOutfitWithImageDto dto)
-        {
-            if (dto == null)
-            {
-                return BadRequest("Некорректные данные.");
-            }
+ [Authorize]     
+[HttpPost("create-with-images")]
+public async Task<IActionResult> CreateOutfitWithImages([FromForm] CreateOutfitWithImagesDto dto)
+{
+    if (dto == null)
+    {
+        return BadRequest("Некорректные данные.");
+    }
 
-            string imageUrl = null;
-            if (dto.ImageFile != null && dto.ImageFile.Length > 0)
+    var imageUrls = new List<string>();
+
+    if (dto.Images != null && dto.Images.Count > 0)
+    {
+        foreach (var imageFile in dto.Images)
+        {
+            if (imageFile.Length > 0)
             {
-                // Загружаем изображение в Cloudinary
-                ImageUploadResult uploadResult = await _cloudinaryService.UploadImageAsync(dto.ImageFile);
-                if (uploadResult.StatusCode != HttpStatusCode.OK)
+                // Загрузка изображения (например, в Cloudinary)
+                var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile);
+                if (uploadResult.StatusCode != System.Net.HttpStatusCode.OK)
                 {
                     return StatusCode((int)uploadResult.StatusCode, uploadResult.Error?.Message);
                 }
-                imageUrl = uploadResult.SecureUrl.ToString();
+                imageUrls.Add(uploadResult.SecureUrl.ToString());
             }
-
-            // Получаем идентификатор текущего пользователя из Claims
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized("Неверный идентификатор пользователя.");
-            }
-
-            var outfit = new Outfit
-            {
-                Title = dto.Title,
-                Description = dto.Description,
-                ImageUrl = imageUrl, // Сохраняем URL, полученный из Cloudinary
-                CreatedAt = DateTime.UtcNow,
-                UserId = currentUserId // Используем идентификатор из токена
-            };
-
-            _context.Outfits.Add(outfit);
-            await _context.SaveChangesAsync();
-
-            return Ok(outfit);
         }
+    }
+
+    // Извлекаем идентификатор текущего пользователя из Claims
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
+    {
+        return Unauthorized("Не удалось определить пользователя.");
+    }
+
+    // Создаем новую публикацию (Outfit)
+    var outfit = new Outfit
+    {
+        Title = dto.Title,
+        Description = dto.Description,
+        Season = dto.Season,
+        Style = dto.Style,
+        Gender = dto.Gender,
+        Occasion = dto.Occasion,
+        CreatedAt = DateTime.UtcNow,
+        UserId = currentUserId,
+        ImageUrl = imageUrls.Any() ? imageUrls[0] : null  // Используем первую фотографию как главное изображение
+    };
+
+    _context.Outfits.Add(outfit);
+    await _context.SaveChangesAsync();
+
+    // Если загружено более одного изображения, объединяем оставшиеся через разделитель "|"
+    if (imageUrls.Count > 1)
+    {
+        var additionalImages = string.Join("|", imageUrls.Skip(1));
+        outfit.ImageUrl += "|" + additionalImages;
+        _context.Outfits.Update(outfit);
+        await _context.SaveChangesAsync();
+    }
+
+    return Ok(outfit);
+}
+
+
 
         [HttpPost("{id}/like")]
         public async Task<IActionResult> LikeOutfit(int id)
@@ -336,12 +360,18 @@ namespace AuthApi.Controllers
             public DateTime CreatedAt { get; set; }
         }
 
-        public class CreateOutfitWithImageDto
+        public class CreateOutfitWithImagesDto
         {
+            [Required]
             public string Title { get; set; }
             public string Description { get; set; }
-            // Файл изображения, передаваемый через форму (multipart/form-data)
-            public IFormFile ImageFile { get; set; }
+            public string Season { get; set; }
+            public string Style { get; set; }
+            public string Gender { get; set; }
+            public string Occasion { get; set; }
+            // Теги, введённые пользователем, разделённые запятыми
+            
+            public List<IFormFile> Images { get; set; }
         }
     }
 }

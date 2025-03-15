@@ -11,249 +11,281 @@
 <div class="profile-container">
     @if (UserProfile != null && UserPosts != null)
     {
-        <div class="profile-header">
-            <img class="profile-avatar" src="@UserProfile.ProfilePicture" alt="Аватар" />
-            <h3>@UserProfile.Username</h3>
-            <p>@UserProfile.FollowersCount followers</p>
-        </div>
+    <div class="profile-header">
+        <img class="profile-avatar" src="@UserProfile.ProfilePicture" alt="Аватар" />
+        <h3>@UserProfile.Username</h3>
+        <p>@UserProfile.FollowersCount followers</p>
+    </div>
 
-        <div class="profile-info">
-            <h4>Ваши данные</h4>
-            <p><strong>Имя пользователя:</strong> @UserProfile.Username</p>
-            <p><strong>Email:</strong> @UserProfile.Email</p>
-            <p><strong>Описание:</strong> @UserProfile.Description</p>
-            <button class="btn" @onclick="ToggleAvatarInput">Изменить фото профиля</button>
-            <button class="btn" @onclick="ChangeDescription">Изменить описание профиля</button>
-            <button class="delete-account-btn" @onclick="DeleteAccount">Удалить аккаунт</button>
+    <div class="profile-info">
+        <h4>Ваши данные</h4>
+        <p><strong>Имя пользователя:</strong> @UserProfile.Username</p>
+        <p><strong>Email:</strong> @UserProfile.Email</p>
+        <p><strong>Описание:</strong> @UserProfile.Description</p>
+        <button class="btn" @onclick="ToggleAvatarInput">Изменить фото профиля</button>
+        <button class="btn" @onclick="ChangeDescription">Изменить описание профиля</button>
+        <button class="delete-account-btn" @onclick="DeleteAccount">Удалить аккаунт</button>
 
-            @if (showAvatarInput)
-            {
-                <div class="avatar-upload">
-                    <InputFile OnChange="OnAvatarSelected" />
-                    <button class="btn" @onclick="UploadAvatar">Обновить аватар</button>
-                </div>
-            }
+        @if (showAvatarInput)
+        {
+        <div class="avatar-upload">
+            <InputFile OnChange="OnAvatarSelected" />
+            <button class="btn" @onclick="UploadAvatar">Обновить аватар</button>
         </div>
+        }
+    </div>
 
-        <div class="posts-section">
-            <h4>Ваши публикации</h4>
-            @foreach (var post in UserPosts)
-            {
-                <div class="post">
-                    <div class="post-content" @onclick="() => GoToPost(post.OutfitId)" style="cursor:pointer;">
-                        <img src="@post.ImageUrl" alt="Публикация" />
-                        <p>@post.Description</p>
-                    </div>
-                    <div class="post-actions">
-                        <button class="btn" @onclick="() => EditPost(post.OutfitId)" @onclick:stopPropagation>Редактировать</button>
-                        <button class="btn" @onclick="() => DeletePost(post.OutfitId)" @onclick:stopPropagation>Удалить</button>
-                    </div>
-                </div>
-            }
+    <div class="posts-section">
+        <h4>Ваши публикации</h4>
+        @if (UserPosts.Any())
+        {
+        @foreach (var post in UserPosts)
+        {
+        <div class="post">
+            <div class="post-content" @onclick="() => GoToPost(post.OutfitId)" style="cursor:pointer;">
+                @if (!string.IsNullOrEmpty(post.ImageUrl))
+                {
+                <img src="@(GetPreviewImage(post.ImageUrl))" alt="Публикация" class="post-image" />
+                }
+                <p>@post.Description</p>
+            </div>
+            <div class="post-actions">
+                <button class="btn" @onclick="() => EditPost(post.OutfitId)" @onclick:stopPropagation>Редактировать</button>
+                <button class="btn" @onclick="() => DeletePost(post.OutfitId)" @onclick:stopPropagation>Удалить</button>
+            </div>
         </div>
+        }
+        }
+        else
+        {
+        <p>Публикаций нет.</p>
+        }
+    </div>
     }
     else
     {
-        <p>Загружаем данные...</p>
+    <p>Загружаем данные...</p>
     }
 </div>
 
 @code {
-    private UserProfileDto UserProfile { get; set; }
-    private List<PostDto> UserPosts { get; set; } = new List<PostDto>();
-    private bool _disposed = false;
-    private bool showAvatarInput = false;
-    private IBrowserFile newAvatarFile;
+private UserProfileDto UserProfile { get; set; }
+private List<PostDto> UserPosts { get; set; } = new List<PostDto>();
+private bool showAvatarInput = false;
+private IBrowserFile newAvatarFile;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadUserProfile();
-        await LoadUserPosts();
-    }
-
-    private async Task LoadUserProfile()
-    {
-        var client = HttpClientFactory.CreateClient("ApiClient");
-        var token = await AuthService.GetTokenAsync();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await client.GetFromJsonAsync<UserProfileDto>("api/users/current-user");
-        if (response != null)
-        {
-            UserProfile = response;
-        }
-    }
-
-    private async Task LoadUserPosts()
-    {
-        if (UserProfile?.UserId != 0)
-        {
-            var client = HttpClientFactory.CreateClient("ApiClient");
-            var token = await AuthService.GetTokenAsync();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await client.GetFromJsonAsync<List<PostDto>>($"api/outfits/user/{UserProfile.UserId}");
-            if (response != null)
-            {
-                UserPosts = response;
-            }
-        }
-    }
-
-    private void ToggleAvatarInput()
-    {
-        showAvatarInput = !showAvatarInput;
-    }
-
-    private async Task OnAvatarSelected(InputFileChangeEventArgs e)
-    {
-        newAvatarFile = e.File;
-    }
-
-    private async Task UploadAvatar()
-    {
-        if (newAvatarFile == null)
-        {
-            await JsRuntime.InvokeVoidAsync("alert", "Пожалуйста, выберите изображение для аватара.");
-            return;
-        }
-
-        try
-        {
-            var content = new MultipartFormDataContent();
-            var stream = newAvatarFile.OpenReadStream(5 * 1024 * 1024);
-            var fileContent = new StreamContent(stream);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(newAvatarFile.ContentType);
-            // Имя поля должно соответствовать [FromForm] параметру API ("ImageFile")
-            content.Add(fileContent, "ImageFile", newAvatarFile.Name);
-
-            var client = HttpClientFactory.CreateClient("ApiClient");
-            var token = await AuthService.GetTokenAsync();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await client.PostAsync("api/users/change-avatar", content);
-            if (response.IsSuccessStatusCode)
-            {
-                var resultJson = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<AvatarResult>(resultJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                if (result != null && !string.IsNullOrEmpty(result.AvatarUrl))
-                {
-                    UserProfile.ProfilePicture = result.AvatarUrl;
-                    showAvatarInput = false;
-                    StateHasChanged();
-                }
-                else
-                {
-                    await JsRuntime.InvokeVoidAsync("alert", "Ошибка при получении нового URL аватара.");
-                }
-            }
-            else
-            {
-                await JsRuntime.InvokeVoidAsync("alert", "Не удалось изменить аватар.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JsRuntime.InvokeVoidAsync("alert", $"Ошибка: {ex.Message}");
-        }
-    }
-
-    private async Task ChangeDescription()
-    {
-        var newDescription = await JsRuntime.InvokeAsync<string>("prompt", "Введите новое описание профиля");
-        if (!string.IsNullOrEmpty(newDescription))
-        {
-            var client = HttpClientFactory.CreateClient("ApiClient");
-            var token = await AuthService.GetTokenAsync();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await client.PostAsJsonAsync("api/users/change-description", new { Description = newDescription });
-            if (response.IsSuccessStatusCode)
-            {
-                UserProfile.Description = newDescription;
-                StateHasChanged();
-            }
-            else
-            {
-                await JsRuntime.InvokeVoidAsync("alert", "Не удалось изменить описание.");
-            }
-        }
-    }
-
-    private async Task DeleteAccount()
-    {
-        var confirmation = await JsRuntime.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить аккаунт?");
-        if (confirmation)
-        {
-            var client = HttpClientFactory.CreateClient("ApiClient");
-            var token = await AuthService.GetTokenAsync();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            await client.DeleteAsync($"api/users/{UserProfile.UserId}/delete");
-            Navigation.NavigateTo("/login");
-        }
-    }
-
-    private async Task EditPost(int postId)
-    {
-        Navigation.NavigateTo($"/edit-post/{postId}");
-    }
-
-    private async Task DeletePost(int postId)
-    {
-        var confirmation = await JsRuntime.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить этот пост?");
-        if (confirmation)
-        {
-            var client = HttpClientFactory.CreateClient("ApiClient");
-            var token = await AuthService.GetTokenAsync();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            await client.DeleteAsync($"api/outfits/{postId}");
-            await LoadUserPosts();
-        }
-    }
-
-    private void GoToProfile() => Navigation.NavigateTo("/profile");
-    private void GoToFeed() => Navigation.NavigateTo("/feed");
-    private void Subscriptions() => Navigation.NavigateTo("/subscriptions");
-    private void GoToCreatePublication() => Navigation.NavigateTo("/create-publication");
-    private void GoToPost(int postId) => Navigation.NavigateTo($"/post/{postId}");
-
-    public void Dispose()
-    {
-        _disposed = true;
-    }
-
-    public class UserProfileDto
-    {
-        public int UserId { get; set; }
-        public string Username { get; set; }
-        public string Email { get; set; }
-        public string ProfilePicture { get; set; }
-        public string Description { get; set; }
-        public int FollowersCount { get; set; }
-    }
-
-    public class PostDto
-    {
-        public int OutfitId { get; set; }
-        public string Description { get; set; }
-        public string ImageUrl { get; set; }
-    }
-
-    public class AvatarResult
-    {
-        public string Message { get; set; }
-        public string AvatarUrl { get; set; }
-    }
+protected override async Task OnInitializedAsync()
+{
+await LoadUserProfile();
+await LoadUserPosts();
 }
 
+private async Task LoadUserProfile()
+{
+var client = HttpClientFactory.CreateClient("ApiClient");
+var token = await AuthService.GetTokenAsync();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
+var response = await client.GetFromJsonAsync<UserProfileDto>("api/users/current-user");
+if (response != null)
+{
+UserProfile = response;
+}
+}
+
+private async Task LoadUserPosts()
+{
+if (UserProfile?.UserId != 0)
+{
+var client = HttpClientFactory.CreateClient("ApiClient");
+var token = await AuthService.GetTokenAsync();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+var posts = await client.GetFromJsonAsync<List<PostDto>>($"api/outfits/user/{UserProfile.UserId}");
+if (posts != null)
+{
+UserPosts = posts;
+}
+}
+}
+
+private void ToggleAvatarInput() => showAvatarInput = !showAvatarInput;
+
+private async Task OnAvatarSelected(InputFileChangeEventArgs e)
+{
+newAvatarFile = e.File;
+}
+
+private async Task UploadAvatar()
+{
+if (newAvatarFile == null)
+{
+await JsRuntime.InvokeVoidAsync("alert", "Пожалуйста, выберите изображение для аватара.");
+return;
+}
+
+try
+{
+var content = new MultipartFormDataContent();
+var stream = newAvatarFile.OpenReadStream(5 * 1024 * 1024);
+var fileContent = new StreamContent(stream);
+fileContent.Headers.ContentType = new MediaTypeHeaderValue(newAvatarFile.ContentType);
+content.Add(fileContent, "ImageFile", newAvatarFile.Name);
+
+var client = HttpClientFactory.CreateClient("ApiClient");
+var token = await AuthService.GetTokenAsync();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+var response = await client.PostAsync("api/users/change-avatar", content);
+if (response.IsSuccessStatusCode)
+{
+var resultJson = await response.Content.ReadAsStringAsync();
+var result = JsonSerializer.Deserialize<AvatarResult>(resultJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+if (result != null && !string.IsNullOrEmpty(result.AvatarUrl))
+{
+UserProfile.ProfilePicture = result.AvatarUrl;
+showAvatarInput = false;
+StateHasChanged();
+}
+else
+{
+await JsRuntime.InvokeVoidAsync("alert", "Ошибка при получении нового URL аватара.");
+}
+}
+else
+{
+await JsRuntime.InvokeVoidAsync("alert", "Не удалось изменить аватар.");
+}
+}
+catch (Exception ex)
+{
+await JsRuntime.InvokeVoidAsync("alert", $"Ошибка: {ex.Message}");
+}
+}
+
+private async Task ChangeDescription()
+{
+var newDescription = await JsRuntime.InvokeAsync<string>("prompt", "Введите новое описание профиля");
+if (!string.IsNullOrEmpty(newDescription))
+{
+var client = HttpClientFactory.CreateClient("ApiClient");
+var token = await AuthService.GetTokenAsync();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+var response = await client.PostAsJsonAsync("api/users/change-description", new { Description = newDescription });
+if (response.IsSuccessStatusCode)
+{
+UserProfile.Description = newDescription;
+StateHasChanged();
+}
+else
+{
+await JsRuntime.InvokeVoidAsync("alert", "Не удалось изменить описание.");
+}
+}
+}
+
+private async Task DeleteAccount()
+{
+var confirmation = await JsRuntime.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить аккаунт?");
+if (confirmation)
+{
+var client = HttpClientFactory.CreateClient("ApiClient");
+var token = await AuthService.GetTokenAsync();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+await client.DeleteAsync($"api/users/{UserProfile.UserId}/delete");
+Navigation.NavigateTo("/login");
+}
+}
+
+private async Task EditPost(int postId)
+{
+Navigation.NavigateTo($"/edit-post/{postId}");
+}
+
+private async Task DeletePost(int postId)
+{
+var confirmation = await JsRuntime.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить этот пост?");
+if (confirmation)
+{
+var client = HttpClientFactory.CreateClient("ApiClient");
+var token = await AuthService.GetTokenAsync();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+await client.DeleteAsync($"api/outfits/{postId}");
+await LoadUserPosts();
+}
+}
+
+private void GoToUserProfile(int authorId)
+{
+Navigation.NavigateTo($"/user/{authorId}");
+}
+
+private void GoToPost(int postId) => Navigation.NavigateTo($"/post/{postId}");
+
+// Вспомогательный метод для получения превью изображения (первая фотография)
+private string GetPreviewImage(string imageUrls)
+{
+if (string.IsNullOrEmpty(imageUrls))
+return "";
+var urls = imageUrls.Split('|', System.StringSplitOptions.RemoveEmptyEntries);
+return urls.FirstOrDefault() ?? "";
+}
+
+public class UserProfileDto
+{
+public int UserId { get; set; }
+public string Username { get; set; }
+public string Email { get; set; }
+public string ProfilePicture { get; set; }
+public string Description { get; set; }
+public int FollowersCount { get; set; }
+}
+
+public class PostDto
+{
+public int OutfitId { get; set; }
+public string Description { get; set; }
+public string ImageUrl { get; set; }
+public int AuthorId { get; set; }
+public string AuthorUsername { get; set; }
+public string AuthorAvatar { get; set; }
+public int LikesCount { get; set; }
+public List<CommentDto> Comments { get; set; } = new List<CommentDto>();
+}
+
+public class AvatarResult
+{
+public string Message { get; set; }
+public string AvatarUrl { get; set; }
+}
+
+public class CommentDto
+{
+public int CommentId { get; set; }
+public string Text { get; set; }
+public string AuthorUsername { get; set; }
+public DateTime CreatedAt { get; set; }
+}
+}
 
 
 
 <style>
 
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: url("images/bk.png") no-repeat center center fixed;
+        background-size: cover;
+        font-family: Arial, sans-serif;
+    }
+
+
+    
     /* Шапка (navbar) */
     .navbar {
         background-color: #f5f5f5;
